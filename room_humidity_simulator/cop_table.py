@@ -9,8 +9,14 @@ that characteristic as measured or datasheet points:
 - **2D**: ``cops[i][j]`` at ``room_temperatures_c[i]`` and
   ``coil_temperatures_c[j]``; bilinear interpolation.
 
-Outside the table the value at the nearest edge is used (clamped, never
-extrapolated), so the COP always stays within the tabulated range.
+Above the warmest coil temperature and outside the room axis the value at the
+nearest edge is used (clamped). Below the coldest coil temperature the COP
+keeps falling: ``COP_FALLOFF_PER_K`` of the edge value per kelvin, never below
+``COP_FLOOR_FRACTION`` of it. With a fixed electrical power this is the loss
+of cooling capacity a real compressor shows as its evaporating temperature
+drops (suction gas gets thinner); holding the edge COP instead would let a
+power-limited coil run away to unrealistic temperatures (-25 deg C or lower)
+at low airflow.
 
 Validation never raises: :func:`validate_cop_table` returns a structured
 :class:`~room_humidity_simulator.results.ValidationResult` (Req 8.11).
@@ -25,6 +31,15 @@ from typing import Optional, Sequence, Tuple
 
 from room_humidity_simulator.config import COP_MAX, COP_MIN, is_real_number
 from room_humidity_simulator.results import ConfigError, ValidationResult
+
+
+#: Relative COP (and so cooling) loss per kelvin below the coldest coil
+#: temperature of the table. Compressor cooling capacity typically drops by
+#: 3-5 % per kelvin of evaporating temperature.
+COP_FALLOFF_PER_K: float = 0.04
+
+#: Lowest COP below the table, as a fraction of the coldest tabulated value.
+COP_FLOOR_FRACTION: float = 0.1
 
 
 @dataclass(frozen=True)
@@ -57,6 +72,11 @@ class CopTable:
         """Interpolated COP at the given coil and room temperatures."""
         coil_axis = tuple(self.coil_temperatures_c)
         rows = self.rows()
+        below_k = coil_axis[0] - coil_temperature_c
+        if below_k > 0.0:
+            # Colder than the table: evaluate at its edge, then apply the falloff.
+            factor = max(1.0 - COP_FALLOFF_PER_K * below_k, COP_FLOOR_FRACTION)
+            return factor * self.cop(coil_axis[0], room_temperature_c)
         if not self.is_2d:
             return _interp(coil_axis, rows[0], coil_temperature_c)
         room_axis = tuple(self.room_temperatures_c)  # type: ignore[arg-type]
@@ -65,6 +85,7 @@ class CopTable:
 
     @property
     def min_cop(self) -> float:
+        """Lowest tabulated COP (the falloff below the table can go lower)."""
         return min(min(row) for row in self.rows())
 
     @property

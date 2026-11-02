@@ -13,7 +13,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from room_humidity_simulator.config import CoilConfig, FanConfig, RoomConfig, TimeStepConfig
-from room_humidity_simulator.cop_table import CopTable, validate_cop_table
+from room_humidity_simulator.cop_table import COP_FLOOR_FRACTION, CopTable, validate_cop_table
 from room_humidity_simulator.disturbances import Person_Disturbance
 from room_humidity_simulator.simulator import Simulator
 from tests.strategies import (
@@ -36,9 +36,17 @@ def test_1d_interpolation_points_between_and_clamped():
     assert _LUT_1D.cop(0.0, 25.0) == 2.5
     assert _LUT_1D.cop(5.0, 25.0) == pytest.approx(3.0)
     assert _LUT_1D.cop(15.0, 99.0) == pytest.approx(4.25)
-    # Clamped, never extrapolated.
-    assert _LUT_1D.cop(-40.0, 25.0) == 2.0
+    # Clamped above the table.
     assert _LUT_1D.cop(60.0, 25.0) == 5.0
+
+
+def test_cop_falls_off_below_the_table():
+    # 4 % of the edge value (2.0 at -10 C) per kelvin colder...
+    assert _LUT_1D.cop(-15.0, 25.0) == pytest.approx(2.0 * 0.8)
+    # ... never below the floor fraction of it.
+    assert _LUT_1D.cop(-40.0, 25.0) == pytest.approx(2.0 * COP_FLOOR_FRACTION)
+    # 2D: the falloff applies to the room-interpolated edge value (2.5 at 0 C, room 25).
+    assert _LUT_2D.cop(-5.0, 25.0) == pytest.approx(2.5 * 0.8)
 
 
 def test_2d_bilinear_interpolation():
@@ -49,10 +57,11 @@ def test_2d_bilinear_interpolation():
     assert _LUT_2D.cop(2.5, 22.5) == pytest.approx(3.0)
 
 
-def test_single_point_table_is_constant():
+def test_single_point_table_is_constant_down_to_its_point():
     table = CopTable([5.0], [3.2])
     assert validate_cop_table(table).is_ok
-    assert table.cop(-50.0, 0.0) == table.cop(100.0, 100.0) == 3.2
+    assert table.cop(5.0, 0.0) == table.cop(100.0, 100.0) == 3.2
+    assert table.cop(-50.0, 0.0) == pytest.approx(3.2 * COP_FLOOR_FRACTION)
 
 
 @pytest.mark.parametrize(
@@ -105,7 +114,7 @@ def cop_tables(draw, monotone=False):
     return CopTable(coil, rows, room)
 
 
-# Feature: room-humidity-simulator, Property 26: COP interpolation stays within the table and follows its trend
+# Feature: room-humidity-simulator, Property 26: COP interpolation stays within the table (down to the falloff floor) and follows its trend
 @given(
     table=cop_tables(monotone=True),
     coil_temps=st.tuples(st.floats(-60.0, 60.0), st.floats(-60.0, 60.0)),
@@ -116,7 +125,7 @@ def test_cop_interpolation_bounded_and_monotone(table, coil_temps, room):
     lo, hi = sorted(coil_temps)
     cop_lo, cop_hi = table.cop(lo, room), table.cop(hi, room)
     for value in (cop_lo, cop_hi):
-        assert table.min_cop - 1e-9 <= value <= table.max_cop + 1e-9
+        assert table.min_cop * COP_FLOOR_FRACTION - 1e-9 <= value <= table.max_cop + 1e-9
     # A table non-decreasing in coil temperature interpolates non-decreasingly.
     assert cop_hi >= cop_lo - 1e-9
 
@@ -144,7 +153,7 @@ def test_lut_compressor_power_cop_and_coil(config, table, setpoint, max_power, d
         assert 0.0 <= sim.power_draw_watts <= max_power * (1 + 1e-9)
         assert sim.energy_consumed_joules == before + step.electrical_joules
         # The effective COP of the step is one the table can produce.
-        assert table.min_cop * (1 - 1e-9) <= step.cop <= table.max_cop * (1 + 1e-9)
+        assert table.min_cop * COP_FLOOR_FRACTION * (1 - 1e-9) <= step.cop <= table.max_cop * (1 + 1e-9)
         if step.electrical_joules > 0.0:
             assert math.isclose(step.heat_extracted_joules / step.electrical_joules, step.cop, rel_tol=1e-9)
         if step.power_limited:

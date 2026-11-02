@@ -69,7 +69,7 @@
           </div>
           <label class="field" id="cop-fixed"><span>COP value</span><span class="input-unit"><input type="number" step="any" data-path="compressor.cop"><em>–</em></span></label>
           <div id="cop-table-editor" class="cop-editor">
-            <p class="hint">Columns: coil temperature. Rows: room temperature. Values are interpolated and held at the edges.</p>
+            <p class="hint">Columns: coil temperature. Rows: room temperature. Values are interpolated; above the table and outside the room range they are held at the edge, below the coldest coil temperature the COP drops 4 % per °C (cooling capacity falls with evaporating temperature).</p>
             <div class="table-scroll"><table class="grid" id="cop-grid"></table></div>
             <div class="row-actions">
               <button class="small" data-cop="add-col">+ coil temp</button>
