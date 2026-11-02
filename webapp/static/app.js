@@ -572,9 +572,6 @@
       Charts.line($("#c-fan"), { ...common, label: "Fan flow chosen by the algorithm", y: { zero: true }, series: withB("Fan flow", "fan_flow_m3_per_h", "m³/h", 0) });
       Charts.line($("#c-energy"), { ...common, label: "Cumulative energy", y: { zero: true }, series: withB("Energy", "energy_kwh", "kWh", 3) });
     }
-    Charts.line($("#c-abs"), { ...common, label: "Water vapor in the room", y: { zero: true },
-      refs: [{ y: out.summary.saturation_g, label: "saturation" }],
-      series: [{ name: "Water vapor", values: s.absolute_humidity_g, color: C.s1, unit: "g", digits: 0 }] });
     Charts.line($("#c-flow"), { ...common, label: "Moisture added and removed", y: { zero: true },
       series: [
         { name: "Sources (net, window can be < 0)", values: s.added_g_per_min, color: C.s2, unit: "g/min", digits: 2 },

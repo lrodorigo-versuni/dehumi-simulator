@@ -61,14 +61,16 @@ DEFAULT_SCENARIO: Dict[str, Any] = {
             "frost_halving_g": 300.0,
             "reevaporation_pct": 30.0,
         },
-        "cop": 3.0,
+        "cop": 2.5,  # fixed-COP mode; ~ the table at a 2-5 deg C coil, 25 deg C room
         "cop_table": {
             "coil_temperatures_c": [2, 5, 10, 15, 20, 25],
             "room_temperatures_c": [15, 25, 35],
+            # 0.40 x Carnot, evaporating 5 K below the coil, condensing 20 K
+            # above the room: COP = 0.4 * Te / (Tc - Te), temperatures in K.
             "cops": [
-                [3.4, 3.8, 4.5, 5.4, 6.5, 7.8],
-                [2.7, 2.9, 3.4, 4.0, 4.7, 5.5],
-                [2.0, 2.2, 2.6, 3.0, 3.5, 4.1],
+                [2.8, 3.1, 3.7, 4.5, 5.8, 7.8],
+                [2.3, 2.4, 2.8, 3.2, 3.8, 4.7],
+                [1.9, 2.0, 2.2, 2.5, 2.9, 3.4],
             ],
         },
     },
