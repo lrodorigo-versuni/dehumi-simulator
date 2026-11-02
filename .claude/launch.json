@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "humidity-ui",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["-m", "webapp.server", "--port", "8765"],
+      "port": 8765
+    }
+  ]
+}

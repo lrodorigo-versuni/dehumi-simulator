@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Room humidity simulator</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1C5 6 3 8.5 3 10.5a5 5 0 0 0 10 0C13 8.5 11 6 8 1z' fill='%232a78d6'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app viz-root">
+  <header class="topbar">
+    <div class="brand">
+      <h1>Room humidity simulator</h1>
+      <span class="subtitle">Coil, fan, power-limited compressor</span>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" class="tab" id="tab-sim" aria-selected="true" aria-controls="view-sim">Simulation</button>
+      <button role="tab" class="tab" id="tab-sweep" aria-selected="false" aria-controls="view-sweep">Parameter sweep</button>
+    </nav>
+    <div class="topbar-actions">
+      <span class="status" id="status" aria-live="polite"></span>
+      <button class="ghost" id="reset">Reset</button>
+      <button class="ghost" id="theme-toggle" aria-label="Toggle dark mode">Theme</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel" id="form" aria-label="Scenario">
+      <section class="group">
+        <h2>Room</h2>
+        <label class="field"><span>Volume</span><span class="input-unit"><input type="number" step="any" data-path="room.volume_m3"><em>m³</em></span></label>
+        <label class="field"><span>Temperature</span><span class="input-unit"><input type="number" step="any" data-path="room.temperature_c"><em>°C</em></span></label>
+        <label class="field"><span>Initial humidity</span><span class="input-unit"><input type="number" step="any" data-path="room.initial_humidity_gm3"><em>g/m³</em></span></label>
+        <p class="hint" id="hint-rh"></p>
+      </section>
+
+      <section class="group">
+        <h2>Fan &amp; coil</h2>
+        <label class="field"><span>Fan flow</span><span class="input-unit"><input type="number" step="any" data-path="fan.flow_rate_m3_per_h"><em>m³/h</em></span></label>
+        <label class="field" title="Upper limit on condensate removal; the actual rate follows from coil temperature, airflow and room humidity"><span>Max condensation</span><span class="input-unit"><input type="number" step="any" min="0" data-path="coil.max_condensation_l_per_day"><em>L/day</em></span></label>
+        <label class="field"><span>Coil effectiveness</span><span class="input-unit"><input type="number" step="0.01" min="0" max="1" data-path="coil.effectiveness"><em>0–1</em></span></label>
+        <label class="field"><span>Coil temp. (no compressor)</span><span class="input-unit"><input type="number" step="any" data-path="coil.surface_temperature_c"><em>°C</em></span></label>
+      </section>
+
+      <section class="group">
+        <div class="group-head">
+          <h2>Compressor</h2>
+          <label class="switch"><input type="checkbox" data-path="compressor.enabled"><span>Enabled</span></label>
+        </div>
+        <div id="compressor-fields">
+          <div class="field">
+            <span>Type</span>
+            <div class="segmented" role="radiogroup" aria-label="Compressor type">
+              <label><input type="radio" name="comp_mode" value="on_off" data-path="compressor.mode"><span>On/off</span></label>
+              <label><input type="radio" name="comp_mode" value="modulating" data-path="compressor.mode"><span>Modulating</span></label>
+            </div>
+          </div>
+          <p class="hint" id="comp-mode-hint"></p>
+          <label class="field" id="setpoint-field"><span>Coil setpoint</span><span class="input-unit"><input type="number" step="any" data-path="compressor.setpoint_temperature_c"><em>°C</em></span></label>
+          <label class="field" id="coil-mass-field"><span>Coil heat capacity</span><span class="input-unit"><input type="number" step="any" data-path="compressor.coil_heat_capacity_j_per_k"><em>J/K</em></span></label>
+          <label class="field"><span>Max absorbed power</span><span class="input-unit"><input type="number" step="any" data-path="compressor.max_power_w"><em>W</em></span></label>
+          <div class="field">
+            <span>COP</span>
+            <div class="segmented" role="radiogroup" aria-label="COP mode">
+              <label><input type="radio" name="cop_mode" value="fixed" data-path="compressor.cop_mode"><span>Fixed</span></label>
+              <label><input type="radio" name="cop_mode" value="table" data-path="compressor.cop_mode"><span>Lookup table</span></label>
+            </div>
+          </div>
+          <label class="field" id="cop-fixed"><span>COP value</span><span class="input-unit"><input type="number" step="any" data-path="compressor.cop"><em>–</em></span></label>
+          <div id="cop-table-editor" class="cop-editor">
+            <p class="hint">Columns: coil temperature. Rows: room temperature. Values are interpolated and held at the edges.</p>
+            <div class="table-scroll"><table class="grid" id="cop-grid"></table></div>
+            <div class="row-actions">
+              <button class="small" data-cop="add-col">+ coil temp</button>
+              <button class="small" data-cop="del-col">− coil temp</button>
+              <button class="small" data-cop="add-row">+ room temp</button>
+              <button class="small" data-cop="del-row">− room temp</button>
+            </div>
+            <div class="chart mini-chart" id="cop-chart" aria-label="COP curves"></div>
+          </div>
+          <div class="defrost-block">
+            <div class="group-head sub">
+              <h3>Frost &amp; defrost</h3>
+              <label class="switch"><input type="checkbox" data-path="compressor.defrost.enabled"><span>Enabled</span></label>
+            </div>
+            <div id="defrost-fields">
+              <p class="hint">Below 0 °C the water freezes on the coil and its effectiveness drops. The unit defrosts (compressor off, fan on) when the coil stays below the start temperature for the delay, until it is back above the end temperature.</p>
+              <label class="field"><span>Start below / after</span><span class="input-unit pair"><input type="number" step="any" data-path="compressor.defrost.start_below_c"><input type="number" step="any" data-path="compressor.defrost.start_delay_s"><em>°C / s</em></span></label>
+              <label class="field"><span>End above</span><span class="input-unit"><input type="number" step="any" data-path="compressor.defrost.end_above_c"><em>°C</em></span></label>
+              <label class="field"><span>Duration min / max</span><span class="input-unit pair"><input type="number" step="any" data-path="compressor.defrost.min_duration_s"><input type="number" step="any" data-path="compressor.defrost.max_duration_s"><em>s</em></span></label>
+              <label class="field"><span>Frost halving the coil</span><span class="input-unit"><input type="number" step="any" data-path="compressor.defrost.frost_halving_g"><em>g</em></span></label>
+              <label class="field"><span>Melt re-evaporated</span><span class="input-unit"><input type="number" step="any" data-path="compressor.defrost.reevaporation_pct"><em>%</em></span></label>
+            </div>
+          </div>
+          <div id="schedule-block">
+            <h3>On / off schedule</h3>
+            <div id="events" class="list"></div>
+            <button class="small" id="add-event">+ event</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" id="control-group">
+        <div class="group-head">
+          <h2>Control</h2>
+          <div class="segmented" role="radiogroup" aria-label="Control mode">
+            <label><input type="radio" name="control_mode" value="schedule" data-path="control.mode"><span>Schedule</span></label>
+            <label><input type="radio" name="control_mode" value="controller" data-path="control.mode"><span>Algorithm</span></label>
+          </div>
+        </div>
+        <p class="hint" id="control-mode-hint"></p>
+        <div id="control-fields">
+          <label class="field"><span>Algorithm</span><select id="ctrl-select" aria-label="Algorithm"></select></label>
+          <p class="hint doc" id="ctrl-doc"></p>
+          <div id="ctrl-params"></div>
+          <label class="field"><span>Compare with</span><select id="cmp-select" aria-label="Compare with"></select></label>
+          <div id="cmp-params"></div>
+          <div class="row-actions"><button class="small" id="reload-ctrl">Reload algorithms</button></div>
+          <p class="hint">Your algorithms: any class with a <code>step()</code> in <code>controllers/*.py</code>. Edit the file and press Reload.</p>
+
+          <h3>Comfort band (KPIs)</h3>
+          <label class="field"><span>Target RH</span><span class="input-unit"><input type="number" step="any" data-path="control.band.target_pct"><em>%</em></span></label>
+          <label class="field"><span>Band low / high</span><span class="input-unit pair"><input type="number" step="any" data-path="control.band.low_pct"><input type="number" step="any" data-path="control.band.high_pct"><em>%</em></span></label>
+
+          <h3>Fan speeds</h3>
+          <div id="fan-speeds" class="list"></div>
+          <div class="row-actions"><button class="small" id="add-speed">+ speed</button></div>
+
+          <h3>Compressor protection</h3>
+          <label class="field"><span>Min on time</span><span class="input-unit"><input type="number" step="any" data-path="control.protection.min_on_s"><em>s</em></span></label>
+          <label class="field"><span>Min off time</span><span class="input-unit"><input type="number" step="any" data-path="control.protection.min_off_s"><em>s</em></span></label>
+
+          <h3>RH sensor</h3>
+          <label class="field"><span>Noise (std. dev.)</span><span class="input-unit"><input type="number" step="any" data-path="control.sensor.noise_std_pct"><em>%</em></span></label>
+          <label class="field"><span>Resolution</span><span class="input-unit"><input type="number" step="any" data-path="control.sensor.resolution_pct"><em>%</em></span></label>
+          <label class="field"><span>Time constant</span><span class="input-unit"><input type="number" step="any" data-path="control.sensor.time_constant_s"><em>s</em></span></label>
+          <label class="field"><span>Noise seed</span><span class="input-unit"><input type="number" step="1" data-path="control.sensor.seed"><em>–</em></span></label>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2>Moisture sources</h2>
+        <div id="disturbances" class="list"></div>
+        <div class="row-actions">
+          <button class="small" id="add-person">+ person</button>
+          <button class="small" id="add-kettle">+ boiling water</button>
+          <button class="small" id="add-window">+ open window</button>
+        </div>
+        <p class="hint">Typical: person 0.015 g/s, kettle 0.2–0.5 g/s. Open window: tilted 30–100 m³/h, wide open 200–1000 m³/h; it brings the room toward the outdoor humidity (dries it with cold air, humidifies it in muggy weather) and the gusts make the airflow vary randomly but reproducibly. Leave "until" empty to keep it to the end.</p>
+      </section>
+
+      <section class="group">
+        <h2>Simulation</h2>
+        <label class="field"><span>Duration</span><span class="input-unit"><input type="number" step="any" data-path="duration_min"><em>min</em></span></label>
+        <label class="field"><span>Time step</span><span class="input-unit"><input type="number" step="any" data-path="time_step_s"><em>s</em></span></label>
+      </section>
+      <p class="error" id="error" role="alert" hidden></p>
+    </aside>
+
+    <main class="content">
+      <section id="view-sim" role="tabpanel" aria-labelledby="tab-sim">
+        <div class="tiles" id="tiles"></div>
+        <div class="card compare-card" id="kpi-compare" hidden>
+          <div class="table-scroll"><table class="data kpi" id="kpi-table"></table></div>
+        </div>
+        <p class="legend-note"><span class="band-key"></span><span id="band-note">Shaded: compressor running</span> · hover a chart to read every value at that time</p>
+        <div class="charts">
+          <figure class="card"><figcaption><h3>Relative humidity</h3><span>%</span></figcaption><div class="chart" id="c-rh"></div></figure>
+          <figure class="card"><figcaption><h3>Water vapor in the room</h3><span>g · line: saturation</span><b class="only-a" hidden>A only</b></figcaption><div class="chart" id="c-abs"></div></figure>
+          <figure class="card"><figcaption><h3>Moisture flows</h3><span>g/min</span><b class="only-a" hidden>A only</b></figcaption><div class="chart" id="c-flow"></div></figure>
+          <figure class="card"><figcaption><h3>Temperatures</h3><span>°C · line: setpoint</span><b class="only-a" hidden>A only</b></figcaption><div class="chart" id="c-temp"></div></figure>
+          <figure class="card controller-only"><figcaption><h3>Fan flow</h3><span>m³/h, chosen by the algorithm</span></figcaption><div class="chart" id="c-fan"></div></figure>
+          <figure class="card controller-only"><figcaption><h3>Energy used</h3><span>kWh, compressor + fan</span></figcaption><div class="chart" id="c-energy"></div></figure>
+          <figure class="card"><figcaption><h3>Compressor state</h3><span>running, at max power, defrosting</span></figcaption><div class="chart lanes-chart" id="c-state"></div></figure>
+          <figure class="card"><figcaption><h3>Compressor power</h3><span>W · line: max power</span></figcaption><div class="chart" id="c-power"></div></figure>
+          <figure class="card"><figcaption><h3>Compressor COP</h3><span>effective, per step</span><b class="only-a" hidden>A only</b></figcaption><div class="chart" id="c-cop"></div></figure>
+        </div>
+        <details class="card table-card">
+          <summary>Data table <button class="small" id="download-csv">Download CSV</button></summary>
+          <div class="table-scroll tall"><table class="data" id="data-table"></table></div>
+        </details>
+      </section>
+
+      <section id="view-sweep" role="tabpanel" aria-labelledby="tab-sweep" hidden>
+        <div class="filters">
+          <label class="field inline"><span>Vary</span><select id="sweep-param"></select></label>
+          <label class="field inline"><span>From</span><input type="number" step="any" id="sweep-from"></label>
+          <label class="field inline"><span>To</span><input type="number" step="any" id="sweep-to"></label>
+          <label class="field inline"><span>Points</span><input type="number" min="2" max="25" id="sweep-points" value="12"></label>
+          <label class="field inline"><span>Show</span><select id="sweep-metric"></select></label>
+          <button class="primary" id="sweep-run">Run sweep</button>
+        </div>
+        <p class="hint">Runs the scenario on the left once per value; everything else stays as configured.</p>
+        <figure class="card wide"><figcaption><h3 id="sweep-title">Sweep</h3><span id="sweep-sub"></span></figcaption><div class="chart tall" id="c-sweep"></div></figure>
+        <div class="card"><div class="table-scroll"><table class="data" id="sweep-table"></table></div></div>
+      </section>
+    </main>
+  </div>
+  <div class="tooltip" id="tooltip" role="status" hidden></div>
+</div>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

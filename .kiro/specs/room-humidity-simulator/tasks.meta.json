@@ -1,0 +1,364 @@
+{
+  "pbtResults": {
+    "2.2 Write property test for relative-humidity derivation": {
+      "status": "passed",
+      "lastRunTimestamp": 1793196182327
+    },
+    "7.2 Write property test for disturbance contribution": {
+      "status": "passed",
+      "lastRunTimestamp": 1793196298723
+    }
+  },
+  "executionHistory": {
+    "1. Set up project structure, shared result/error types, and config models": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179727070
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179735309
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179951327
+      }
+    ],
+    "2.1 Implement the pure saturation and dew-point functions": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179727799
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179959937
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793182889057
+      }
+    ],
+    "3.1 Implement Room state container and derived accessors": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179727834
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793182906381
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793186858422
+      }
+    ],
+    "4.1 Implement Fan with moved-air computation": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179727861
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793186869261
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196202842
+      }
+    ],
+    "5.1 Implement Coil with the dew-point/temperature-gated removal algorithm": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179727891
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196213308
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203623096
+      }
+    ],
+    "6. Checkpoint - Ensure physics and domain components pass": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179727919
+      }
+    ],
+    "7.1 Define the Disturbance interface and the two built-in implementations": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179727949
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793186870142
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196205078
+      }
+    ],
+    "8.1 Implement configure() with eager validation and state preservation": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179727973
+      }
+    ],
+    "9.1 Implement add/remove disturbance management with validation": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728002
+      }
+    ],
+    "10. Checkpoint - Ensure disturbances and configuration pass": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728031
+      }
+    ],
+    "11.1 Implement the single-step advance with the mandated update order": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728057
+      }
+    ],
+    "11.2 Implement multi-step advance(dt, n)": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728082
+      }
+    ],
+    "13. Final checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728108
+      }
+    ],
+    "14.1 Add the energy helper functions for the heat model": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728134
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196217750
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203627690
+      }
+    ],
+    "15.1 Implement Compressor configuration, state, validation, and getters": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728163
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203635863
+      }
+    ],
+    "16.1 Wire the compressor into the step to drive the coil surface temperature": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728197
+      }
+    ],
+    "17.1 Compute per-step heat, electrical energy, cumulative energy, and power draw": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728225
+      }
+    ],
+    "18.1 Preserve Phase 1 behavior when no compressor is configured and support mid-run injection": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728252
+      }
+    ],
+    "19. Checkpoint - Ensure Phase 2 compressor and energy tasks pass": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728281
+      }
+    ],
+    "21. Final Phase 2 checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793179728308
+      }
+    ],
+    "2. Implement the Psychrometrics physics module": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793182889096
+      }
+    ],
+    "3. Implement the Room domain component": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793186858462
+      }
+    ],
+    "2.2 Write property test for relative-humidity derivation": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793186865788
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196203749
+      }
+    ],
+    "2.3 Write unit tests for Psychrometrics edge cases": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793186866849
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196206016
+      }
+    ],
+    "3.2 Write unit tests for Room getters and clamping": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793186868134
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196207026
+      }
+    ],
+    "4. Implement the Fan domain component": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196202874
+      }
+    ],
+    "7. Implement the Disturbance interface and built-in disturbance types": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196205118
+      }
+    ],
+    "4.2 Write unit test for Fan getter and zero-flow behavior": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196214810
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203624508
+      }
+    ],
+    "7.2 Write property test for disturbance contribution": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196215661
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203625475
+      }
+    ],
+    "7.3 Write unit test for custom disturbance incorporation": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793196216602
+      },
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203626868
+      }
+    ],
+    "5. Implement the Coil domain component and removal algorithm": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203623133
+      }
+    ],
+    "14. Implement the latent and sensible heat helpers in Psychrometrics": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203627723
+      }
+    ],
+    "5.2 Write property test for coil removal bounds": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203633093
+      }
+    ],
+    "5.3 Write property test for coil dew-point and temperature gating": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203634451
+      }
+    ],
+    "14.2 Write property test for heat extracted (latent plus sensible)": [
+      {
+        "executionId": "29c8e8c1-2194-492b-bf1f-ad7f557f0d35",
+        "chatSessionId": "sess_97c1abfc-3af1-4051-b343-74d3bf7b634f",
+        "timestamp": 1793203636544
+      }
+    ]
+  }
+}
