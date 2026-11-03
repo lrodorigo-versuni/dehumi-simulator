@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Room Humidity Simulator — modello fisico</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --petrol: #0B3C49; --ink: #16262c; --muted: #5b6b72; --line: #d5e2e6;
+    --bg: #ffffff; --tint: #eef6f8;
+    --room: #2A9D8F; --src: #4A7FB5; --coil: #2B8FB3; --fan: #5E7480;
+    --comp: #E07B24; --prot: #8562B5; --ctrl: #0B3C49;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #10262d; font-family: Calibri, "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--ink); }
+  #deck { position: fixed; inset: 0; display: grid; place-items: center; }
+  .slide { position: absolute; width: 1280px; height: 720px; background: var(--bg); padding: 44px 64px 40px; display: none; transform-origin: center; overflow: hidden; }
+  .slide.active { display: flex; flex-direction: column; }
+  .slide.dark { background: var(--petrol); color: #fff; }
+  h1, h2, h3 { font-family: Cambria, Georgia, "Times New Roman", serif; margin: 0; }
+  h1 { font-size: 54px; line-height: 1.1; }
+  h2 { font-size: 36px; margin-bottom: 20px; }
+  h3 { font-size: 20px; margin-bottom: 6px; }
+  p, li { font-size: 17px; line-height: 1.4; }
+  ul { margin: 0; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #fff; border-radius: 999px; padding: 4px 14px 4px 6px; margin-bottom: 10px; align-self: flex-start; }
+  .chip i { width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,.35); display: inline-block; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; flex: 1; min-height: 0; }
+  .cols.c3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols.wide-left { grid-template-columns: 1.15fr 1fr; }
+  .cols.wide-right { grid-template-columns: 1fr 1.2fr; }
+  .card { background: var(--tint); border-radius: 14px; padding: 18px 22px; }
+  .eq { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px; margin: 6px 0 10px; font-size: 17px; }
+  .eq .katex-display { margin: .45em 0; }
+  .eq small { font-size: 14px; color: var(--muted); display: block; margin: 0 0 6px; }
+  .katex { font-size: 1.06em; }
+  .muted { color: var(--muted); }
+  .note { font-size: 15px; color: var(--muted); margin-top: auto; padding-top: 10px; }
+  .pagenum { position: absolute; right: 30px; bottom: 16px; font-size: 13px; color: var(--muted); }
+  .dark .pagenum { color: #9fc0c8; }
+  svg text { font-family: Calibri, "Segoe UI", Arial, sans-serif; }
+  .big { font-size: 40px; font-weight: 700; font-family: Cambria, Georgia, serif; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 17px; }
+  .kv b { white-space: nowrap; }
+  table.vars { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+  table.vars th { text-align: left; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 4px 10px; border-bottom: 2px solid var(--line); }
+  table.vars td { padding: 5px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.vars tr.grp td { background: var(--tint); font-weight: 700; color: var(--petrol); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; }
+  table.vars td:first-child { white-space: nowrap; width: 92px; }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 40px; margin-bottom: 8px; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 26px; height: 26px; border-radius: 50%; background: var(--room); color: #fff; font-weight: 700; font-size: 14px; display: grid; place-items: center; }
+  .hint { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); color: #9fc0c8; font-size: 13px; }
+  @media print {
+    html, body { background: #fff; }
+    #deck { position: static; display: block; }
+    .slide { display: flex !important; flex-direction: column; position: relative; transform: none !important; page-break-after: always; margin: 0 auto; }
+    .hint { display: none; }
+    @page { size: 1280px 720px; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- 1. Titolo -->
+<section class="slide dark">
+  <div style="margin-top:140px">
+    <div class="chip" style="background:var(--room)"><i></i>Room Humidity Simulator</div>
+    <h1>Modello fisico di un<br>deumidificatore a compressore</h1>
+    <p style="font-size:24px;color:#cfe6eb;margin-top:22px;max-width:920px">Stanza ben miscelata, psicrometria, coil che condensa, compressore a potenza limitata, brina e defrost, controllo in anello chiuso</p>
+  </div>
+  <div class="note" style="color:#9fc0c8">Schema a blocchi → stanza e psicrometria in dettaglio → gli altri blocchi → ipotesi e limiti</div>
+</section>
+
+<!-- 2. Schema a blocchi -->
+<section class="slide">
+  <h2>Schema a blocchi</h2>
+  <svg viewBox="0 0 1180 500" width="1150" height="490" aria-label="Schema a blocchi del simulatore">
+    <defs>
+      <marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2A9D8F"/></marker>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#E07B24"/></marker>
+      <marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7d8b91"/></marker>
+    </defs>
+    <g font-size="15" fill="#fff">
+      <rect x="10" y="130" width="200" height="170" rx="14" fill="#4A7FB5"/>
+      <text x="110" y="185" text-anchor="middle" font-size="21" font-weight="700">Sorgenti</text>
+      <text x="110" y="215" text-anchor="middle">persone</text>
+      <text x="110" y="237" text-anchor="middle">acqua bollente</text>
+      <text x="110" y="259" text-anchor="middle">finestra (±)</text>
+
+      <rect x="300" y="100" width="260" height="230" rx="14" fill="#2A9D8F"/>
+      <text x="430" y="160" text-anchor="middle" font-size="23" font-weight="700">Stanza</text>
+      <text x="430" y="195" text-anchor="middle">volume V, temperatura T costante</text>
+      <text x="430" y="220" text-anchor="middle">stato: vapore m<tspan baseline-shift="sub" font-size="11">w</tspan> [g]</text>
+      <text x="430" y="245" text-anchor="middle">→ ρ<tspan baseline-shift="sub" font-size="11">v</tspan>, RH, dew point</text>
+
+      <rect x="680" y="100" width="220" height="95" rx="14" fill="#2B8FB3"/>
+      <text x="790" y="140" text-anchor="middle" font-size="21" font-weight="700">Coil</text>
+      <text x="790" y="166" text-anchor="middle">stato: T<tspan baseline-shift="sub" font-size="11">c</tspan>, brina m<tspan baseline-shift="sub" font-size="11">ice</tspan></text>
+
+      <rect x="680" y="245" width="220" height="85" rx="14" fill="#5E7480"/>
+      <text x="790" y="281" text-anchor="middle" font-size="21" font-weight="700">Fan</text>
+      <text x="790" y="306" text-anchor="middle">portata F</text>
+
+      <rect x="970" y="100" width="200" height="95" rx="14" fill="#E07B24"/>
+      <text x="1070" y="140" text-anchor="middle" font-size="21" font-weight="700">Compressore</text>
+      <text x="1070" y="166" text-anchor="middle">freddo = COP · P</text>
+
+      <rect x="970" y="245" width="200" height="85" rx="14" fill="#8562B5"/>
+      <text x="1070" y="279" text-anchor="middle" font-size="19" font-weight="700">Protezioni + defrost</text>
+      <text x="1070" y="304" text-anchor="middle">min on/off, ciclo brina</text>
+
+      <rect x="300" y="395" width="870" height="64" rx="14" fill="#0B3C49"/>
+      <text x="735" y="434" text-anchor="middle" font-size="20" font-weight="700">Controllore — programma ON/OFF oppure algoritmo (RH → compressore, velocità fan)</text>
+    </g>
+    <g stroke="#2A9D8F" stroke-width="3.5" fill="none">
+      <line x1="210" y1="215" x2="296" y2="215" marker-end="url(#aw)"/>
+      <line x1="560" y1="290" x2="676" y2="290" marker-end="url(#aw)"/>
+      <line x1="790" y1="245" x2="790" y2="199" marker-end="url(#aw)"/>
+      <line x1="680" y1="147" x2="564" y2="147" marker-end="url(#aw)"/>
+    </g>
+    <g font-size="14" fill="#2A9D8F" font-weight="700">
+      <text x="253" y="205" text-anchor="middle">+ g/s</text>
+      <text x="618" y="280" text-anchor="middle">aria ρ<tspan baseline-shift="sub" font-size="10">v</tspan></text>
+      <text x="618" y="137" text-anchor="middle">aria ρ<tspan baseline-shift="sub" font-size="10">out</tspan></text>
+      <text x="800" y="228">F</text>
+    </g>
+    <line x1="904" y1="147" x2="966" y2="147" stroke="#E07B24" stroke-width="3.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
+    <text x="935" y="135" text-anchor="middle" font-size="14" fill="#E07B24" font-weight="700">calore</text>
+    <g stroke="#7d8b91" stroke-width="2.5" stroke-dasharray="7 5" fill="none">
+      <line x1="430" y1="330" x2="430" y2="391" marker-end="url(#as)"/>
+      <line x1="790" y1="395" x2="790" y2="334" marker-end="url(#as)"/>
+      <line x1="1070" y1="395" x2="1070" y2="334" marker-end="url(#as)"/>
+      <line x1="1070" y1="245" x2="1070" y2="199" marker-end="url(#as)"/>
+      <line x1="900" y1="180" x2="966" y2="262" marker-end="url(#as)"/>
+    </g>
+    <g font-size="14" fill="#5b6b72">
+      <text x="440" y="368">RH misurata (sensore)</text>
+      <text x="800" y="368">velocità</text>
+      <text x="1080" y="368">richiesta ON/OFF</text>
+      <text x="1080" y="228">ON/OFF effettivo</text>
+      <text x="912" y="238">T<tspan baseline-shift="sub" font-size="10">c</tspan></text>
+    </g>
+    <g font-size="14" fill="#5b6b72">
+      <line x1="10" y1="485" x2="44" y2="485" stroke="#2A9D8F" stroke-width="3.5"/><text x="52" y="490">umidità</text>
+      <line x1="140" y1="485" x2="174" y2="485" stroke="#E07B24" stroke-width="3.5"/><text x="182" y="490">calore</text>
+      <line x1="260" y1="485" x2="294" y2="485" stroke="#7d8b91" stroke-width="2.5" stroke-dasharray="7 5"/><text x="302" y="490">segnali</text>
+      <text x="1170" y="490" text-anchor="end">passo Δt fisso: sorgenti → coil (soluzione esatta nel passo) → nuovo stato</text>
+    </g>
+  </svg>
+</section>
+
+<!-- 3. Stanza: variabili e parametri -->
+<section class="slide">
+  <div class="chip" style="background:var(--room)"><i></i>Blocco · Stanza · 1/6</div>
+  <h2>Variabili e parametri della stanza</h2>
+  <div class="cols wide-right">
+    <div>
+      <p style="margin-top:0">La stanza è un <b>volume d'aria ben miscelato</b>: in ogni istante ha un solo valore di temperatura e di umidità. La temperatura è un parametro fisso, e l'unico stato che evolve è la <b>massa di vapore</b> $m_w$.</p>
+      <div class="eq">$$\rho_v = \frac{m_w}{V}, \qquad S(T,V) = \rho_{vs}(T)\,V, \qquad 0 \le m_w \le S$$</div>
+      <p class="muted" style="font-size:15.5px">$\rho_v$ è l'umidità assoluta volumetrica (nel codice <i>specific humidity</i>, in g/m³). $S$ è il massimo vapore che la stanza può contenere prima di condensare.</p>
+      <div class="card" style="margin-top:8px"><p style="margin:0">Esempio di default: $V = 20$ m³ a $25$ °C ⇒ $S \approx 460$ g. Partendo da 12 g/m³ (240 g) la stanza è al 52 % di RH.</p></div>
+    </div>
+    <table class="vars">
+      <tr><th>Simbolo</th><th>Significato</th><th>Unità · range · default</th></tr>
+      <tr class="grp"><td colspan="3">Stato</td></tr>
+      <tr><td>$m_w$</td><td>massa di vapore nell'aria della stanza</td><td>g · $[0, S]$, precisione piena</td></tr>
+      <tr class="grp"><td colspan="3">Parametri</td></tr>
+      <tr><td>$V$</td><td>volume della stanza</td><td>m³ · 0.01–10⁵ · 20</td></tr>
+      <tr><td>$T$</td><td>temperatura dell'aria, costante</td><td>°C · −50…100 · 25</td></tr>
+      <tr><td>$\rho_{v,0}$</td><td>umidità assoluta iniziale</td><td>g/m³ · 0–1000 · 12</td></tr>
+      <tr><td>$\Delta t$</td><td>passo di simulazione</td><td>s · (0, 3600] · 60</td></tr>
+      <tr class="grp"><td colspan="3">Derivate</td></tr>
+      <tr><td>$\rho_v$</td><td>umidità assoluta volumetrica</td><td>g/m³</td></tr>
+      <tr><td>$e$</td><td>pressione parziale del vapore</td><td>hPa</td></tr>
+      <tr><td>$RH$</td><td>umidità relativa</td><td>% · [0, 100], 1 decimale</td></tr>
+      <tr><td>$T_d$</td><td>temperatura di rugiada (dew point)</td><td>°C</td></tr>
+      <tr class="grp"><td colspan="3">Ingressi</td></tr>
+      <tr><td>$\dot m_k$</td><td>portata della sorgente $k$ (finestra con segno)</td><td>g/s</td></tr>
+      <tr><td>$r$</td><td>rimozione della coil</td><td>g/s</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 4a. Psicrometria: concetti -->
+<section class="slide">
+  <div class="chip" style="background:var(--room)"><i></i>Blocco · Stanza · 2/6 · Psicrometria</div>
+  <h2>Pressione di vapore e pressione di saturazione</h2>
+  <div class="cols">
+    <div>
+      <h3>Pressione di vapore $e$</h3>
+      <p style="margin:0 0 4px">L'aria umida è una miscela: aria secca più vapore d'acqua. Per la legge di Dalton ogni gas contribuisce alla pressione totale con la propria <b>pressione parziale</b>:</p>
+      <div class="eq">$$p = p_a + e, \qquad e = \rho_v\,R_v\,T_K$$<small>$e$ è la pressione che il vapore avrebbe da solo nello stesso volume: dice <b>quanto vapore c'è</b></small></div>
+      <h3>Pressione di saturazione $e_s(T)$</h3>
+      <p style="margin:0 0 4px">Sopra una superficie d'acqua le molecole evaporano e condensano di continuo. L'evaporazione dipende solo dalla temperatura, la condensazione cresce con $e$. L'equilibrio si raggiunge quando</p>
+      <div class="eq">$$e = e_s(T)$$<small>il <b>massimo vapore</b> che l'aria può contenere a quella temperatura; dipende solo da $T$, non dalla pressione dell'aria</small></div>
+      <ul>
+        <li>$e < e_s$: l'acqua evapora, l'aria non è satura</li>
+        <li>$e > e_s$: il vapore in eccesso condensa (rugiada, nebbia, coil)</li>
+        <li>$RH = e/e_s$, e il dew point è la $T_d$ per cui $e_s(T_d) = e$</li>
+      </ul>
+    </div>
+    <div>
+      <svg viewBox="0 0 560 330" width="100%" aria-label="Evaporazione e condensazione in aria non satura e satura">
+        <defs>
+          <marker id="mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#E07B24"/></marker>
+          <marker id="md" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2B8FB3"/></marker>
+        </defs>
+        <!-- non saturo -->
+        <rect x="20" y="30" width="240" height="230" rx="14" fill="#eef6f8" stroke="#9fc0c8" stroke-width="2"/>
+        <rect x="22" y="200" width="236" height="58" rx="0" fill="#2B8FB3" opacity=".85"/>
+        <g fill="#2B8FB3"><circle cx="70" cy="80" r="6"/><circle cx="190" cy="110" r="6"/><circle cx="130" cy="60" r="6"/></g>
+        <g stroke-width="3" fill="none">
+          <line x1="60" y1="195" x2="60" y2="140" stroke="#E07B24" marker-end="url(#mu)"/>
+          <line x1="110" y1="195" x2="110" y2="140" stroke="#E07B24" marker-end="url(#mu)"/>
+          <line x1="160" y1="195" x2="160" y2="140" stroke="#E07B24" marker-end="url(#mu)"/>
+          <line x1="215" y1="140" x2="215" y2="195" stroke="#2B8FB3" marker-end="url(#md)"/>
+        </g>
+        <text x="140" y="20" text-anchor="middle" font-size="17" font-weight="700" fill="#16262c">Non satura: e &lt; e<tspan baseline-shift="sub" font-size="12">s</tspan></text>
+        <text x="140" y="290" text-anchor="middle" font-size="15" fill="#5b6b72">evaporano più molecole</text>
+        <text x="140" y="310" text-anchor="middle" font-size="15" fill="#5b6b72">di quante ne condensano</text>
+        <!-- saturo -->
+        <rect x="300" y="30" width="240" height="230" rx="14" fill="#eef6f8" stroke="#9fc0c8" stroke-width="2"/>
+        <rect x="302" y="200" width="236" height="58" fill="#2B8FB3" opacity=".85"/>
+        <g fill="#2B8FB3"><circle cx="330" cy="70" r="6"/><circle cx="370" cy="120" r="6"/><circle cx="410" cy="60" r="6"/><circle cx="450" cy="100" r="6"/><circle cx="500" cy="70" r="6"/><circle cx="385" cy="165" r="6"/><circle cx="475" cy="160" r="6"/><circle cx="520" cy="125" r="6"/></g>
+        <g stroke-width="3" fill="none">
+          <line x1="345" y1="195" x2="345" y2="140" stroke="#E07B24" marker-end="url(#mu)"/>
+          <line x1="415" y1="195" x2="415" y2="140" stroke="#E07B24" marker-end="url(#mu)"/>
+          <line x1="440" y1="140" x2="440" y2="195" stroke="#2B8FB3" marker-end="url(#md)"/>
+          <line x1="505" y1="140" x2="505" y2="195" stroke="#2B8FB3" marker-end="url(#md)"/>
+        </g>
+        <text x="420" y="20" text-anchor="middle" font-size="17" font-weight="700" fill="#16262c">Satura: e = e<tspan baseline-shift="sub" font-size="12">s</tspan>(T)</text>
+        <text x="420" y="290" text-anchor="middle" font-size="15" fill="#5b6b72">evaporazione e condensazione</text>
+        <text x="420" y="310" text-anchor="middle" font-size="15" fill="#5b6b72">si bilanciano</text>
+      </svg>
+      <div class="card" style="margin-top:8px">
+        <p style="margin:0"><b>Ordini di grandezza a 25 °C:</b> pressione totale $p \approx 1013$ hPa, $e_s = 31.6$ hPa (circa il 3 %). Una stanza al 50 % ha $e \approx 15.8$ hPa: il vapore è una piccola frazione dell'aria, ma basta a dare 11.5 g/m³.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Psicrometria: saturazione -->
+<section class="slide">
+  <div class="chip" style="background:var(--room)"><i></i>Blocco · Stanza · 3/6 · Psicrometria</div>
+  <h2>Pressione di saturazione: la formula di Magnus</h2>
+  <div class="cols wide-left">
+    <div>
+      <div class="eq">$$e_s(T) = a \, \exp\!\left(\frac{b\,T}{c + T}\right)$$<small>forma August–Roche–Magnus, sopra acqua liquida, $T$ in °C</small></div>
+      <table class="vars" style="margin-bottom:12px">
+        <tr><th>Coefficiente</th><th>Valore</th><th>Significato</th></tr>
+        <tr><td>$a$</td><td>6.112 hPa</td><td>$e_s$ a 0 °C</td></tr>
+        <tr><td>$b$</td><td>17.62</td><td>pendenza adimensionale</td></tr>
+        <tr><td>$c$</td><td>243.12 °C</td><td>scala di temperatura</td></tr>
+      </table>
+      <p style="margin:0 0 6px">È un fit empirico dell'equazione di Clausius–Clapeyron, accurato a pochi decimi di percento fra −45 e 60 °C. La sensibilità alla temperatura è:</p>
+      <div class="eq">$$\frac{d\ln e_s}{dT} = \frac{b\,c}{(c+T)^2} \approx 6\,\%/\mathrm{K} \ \text{a } 25\,{}^\circ\mathrm{C}$$</div>
+      <p class="muted" style="font-size:15.5px;margin:0">Ogni grado in più permette all'aria di contenere circa il 6 % di vapore in più. È anche il motivo per cui una coil di pochi gradi più fredda condensa molto di più.</p>
+    </div>
+    <div class="card">
+      <h3>$e_s(T)$ fra −10 e 40 °C</h3>
+      <svg id="ch-es" viewBox="0 0 520 380" width="100%"></svg>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Psicrometria: densità di vapore -->
+<section class="slide">
+  <div class="chip" style="background:var(--room)"><i></i>Blocco · Stanza · 4/6 · Psicrometria</div>
+  <h2>Dalla pressione alla massa: il vapore come gas ideale</h2>
+  <div class="cols">
+    <div>
+      <div class="eq">$$\rho_v = \frac{e}{R_v\,T_K} \;\Rightarrow\; \rho_v\,[\mathrm{g/m^3}] = 216.7\,\frac{e\,[\mathrm{hPa}]}{273.15 + T}$$<small>$R_v = 461.5$ J/(kg·K), costante del vapore d'acqua · $216.7 = 10^5 / R_v$ converte hPa e kg in g</small></div>
+      <div class="eq">$$\rho_{vs}(T) = 216.7\,\frac{e_s(T)}{273.15+T}, \qquad S = \rho_{vs}(T)\,V$$</div>
+      <h3>Trasformazioni a pressione parziale costante</h3>
+      <p style="margin:0">Quando l'aria cambia temperatura senza aggiungere o togliere vapore, si conserva $e$, non $\rho_v$. Il modello lo usa in due punti:</p>
+      <ul style="margin-top:6px">
+        <li><b>uscita coil</b>: aria satura a $T_c$, riportata a $T$ ⇒ $\rho_{out} = 216.7\,e_s(T_c)/(273.15+T)$</li>
+        <li><b>aria esterna</b> dalla finestra: $e_{ext} = RH_{ext}\,e_s(T_{ext})$, poi espressa a $T$</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Capacità della stanza $\rho_{vs}(T)$</h3>
+      <svg id="ch-sat" viewBox="0 0 520 330" width="100%"></svg>
+      <p class="muted" style="font-size:15px;margin:6px 0 0">A 25 °C: $e_s = 31.6$ hPa ⇒ $\rho_{vs} = 23.0$ g/m³. A 5 °C (una coil tipica): $8.7$ hPa ⇒ $\rho_{out} = 6.3$ g/m³ riportato a 25 °C.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Psicrometria: grandezze derivate -->
+<section class="slide">
+  <div class="chip" style="background:var(--room)"><i></i>Blocco · Stanza · 5/6 · Psicrometria</div>
+  <h2>Umidità relativa e dew point</h2>
+  <div class="cols wide-right">
+    <div>
+      <div class="eq">$$RH = 100\,\frac{e}{e_s(T)} = 100\,\frac{m_w}{\rho_{vs}(T)\,V}$$<small>arrotondata a 0.1 % e limitata a [0, 100]</small></div>
+      <div class="eq">$$e = \frac{\rho_v\,(273.15+T)}{216.7}, \quad \gamma = \ln\frac{e}{a}, \quad T_d = \frac{c\,\gamma}{b - \gamma}$$<small>inversione esatta di Magnus: $e_s(T_d) = e$</small></div>
+      <p style="margin:4px 0 6px"><b>Esempio</b> — $T = 25$ °C, $\rho_v = 11.5$ g/m³:</p>
+      <div class="eq">$$e = 15.8\ \text{hPa},\quad RH = 50.1\,\%,\quad T_d = 13.9\,{}^\circ\mathrm{C}$$</div>
+      <p class="muted" style="font-size:15.5px;margin:0">Il dew point è la soglia della coil: condensa solo se $T_c < T_d$. Con $\rho_v = 0$ non è definito e la coil non rimuove nulla.</p>
+    </div>
+    <div class="card">
+      <h3>Diagramma $e$–$T$ con le curve a RH costante</h3>
+      <svg id="ch-psy" viewBox="0 0 600 420" width="100%"></svg>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Stanza: bilancio ed evoluzione -->
+<section class="slide">
+  <div class="chip" style="background:var(--room)"><i></i>Blocco · Stanza · 6/6</div>
+  <h2>Bilancio di massa ed evoluzione nel passo</h2>
+  <div class="cols">
+    <div>
+      <h3>Modello continuo</h3>
+      <div class="eq">$$V\,\frac{d\rho_v}{dt} = \sum_k \dot m_k(t) \;-\; r\big(\rho_v, T_c\big), \qquad 0 \le \rho_v \le \rho_{vs}(T)$$</div>
+      <h3>Passo discreto $n \to n+1$ (splitting)</h3>
+      <ol class="steps" style="margin-top:8px">
+        <li>sorgenti, con il tetto della saturazione: $\;m^{*} = \min\!\big(m_n + \textstyle\sum_k \Delta m_k,\; S\big)$</li>
+        <li>coil, integrale esatto di $V\dot\rho_v = -r(\rho_v)$ a partire da $m^{*}/V$: $\;\Delta m_c$</li>
+        <li>aggiornamento: $\;m_{n+1} = \max\big(m^{*} - \Delta m_c,\; 0\big)$</li>
+      </ol>
+      <p class="muted" style="font-size:15.5px;margin:4px 0 0">L'eccesso oltre $S$ si considera condensato sulle superfici e perso. Lo stato è tenuto a precisione piena, quindi gli arrotondamenti non si accumulano.</p>
+    </div>
+    <div>
+      <h3>Dinamica attorno all'equilibrio</h3>
+      <p style="margin:0 0 4px">Senza tetto di condensazione, la rimozione è lineare in $\rho_v$:</p>
+      <div class="eq">$$\tau = \frac{V}{F\,\varepsilon}, \qquad \rho_{v,eq} = \rho_{out}(T_c) + \frac{\sum_k \dot m_k}{F\,\varepsilon}$$</div>
+      <div class="card">
+        <p style="margin:0 0 6px"><b>Default</b>: $V = 20$ m³, $F = 150$ m³/h, $\varepsilon = 0.85$</p>
+        <ul>
+          <li>$\tau \approx 565$ s ≈ 9 minuti: la stanza si avvicina a $\rho_{eq}$ in circa mezz'ora (3τ)</li>
+          <li>2 persone (0.03 g/s) tengono la stanza solo 0.85 g/m³ sopra $\rho_{out}$</li>
+          <li>il limite vero è $\rho_{out}(T_c)$, cioè quanto è fredda la coil</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Sorgenti -->
+<section class="slide">
+  <div class="chip" style="background:var(--src)"><i></i>Blocco · Sorgenti</div>
+  <h2>Sorgenti di umidità: costanti o di scambio</h2>
+  <div class="cols c3">
+    <div class="card">
+      <h3>Persona</h3>
+      <div class="big" style="color:var(--src)">0.015 g/s</div>
+      <p class="muted">≈ 55 g/h, portata costante mentre è presente</p>
+      <div class="eq">$$\Delta m = \dot m\,\Delta t$$</div>
+    </div>
+    <div class="card">
+      <h3>Acqua bollente</h3>
+      <div class="big" style="color:var(--src)">0.2–0.3 g/s</div>
+      <p class="muted">≈ 0.7–1 kg/h, attiva in una finestra di tempo</p>
+      <div class="eq">$$\Delta m = \dot m\,\Delta t$$</div>
+    </div>
+    <div class="card">
+      <h3>Finestra aperta (±)</h3>
+      <p style="margin:0 0 4px">La stanza tende all'umidità esterna, che può asciugarla o inumidirla:</p>
+      <div class="eq">$$\Delta m = V(\rho_{ext} - \rho_v)\left(1 - e^{-Q\Delta t/V}\right)$$</div>
+      <p class="muted" style="font-size:15px;margin:0">Raffiche: $Q = \bar Q \max(0, 1+x)$, con $x$ processo di Ornstein–Uhlenbeck riproducibile da seed.</p>
+    </div>
+  </div>
+  <div class="note">Le sorgenti si sommano; un contributo negativo o non numerico viene escluso dal passo. Nessun assorbimento da muri o arredi.</div>
+</section>
+
+<!-- 9. Fan + Coil -->
+<section class="slide">
+  <div class="chip" style="background:var(--coil)"><i></i>Blocco · Fan + Coil</div>
+  <h2>La coil porta l'aria verso la saturazione a $T_c$</h2>
+  <div class="cols">
+    <div>
+      <div class="eq">$$r(\rho_v) = \min\!\Big(r_{max},\; F\,\varepsilon\,\big(\rho_v - \rho_{out}(T_c)\big)\Big)$$<small>$F$ portata del fan · $\varepsilon$ contact factor (1 − bypass), default 0.85 · $r_{max}$ tetto di condensazione (L/giorno in UI)</small></div>
+      <div class="eq">$$\rho_{out}(T_c) = 216.7\,\frac{e_s(T_c)}{273.15 + T}$$<small>aria satura a $T_c$ riportata alla temperatura della stanza: il minimo raggiungibile</small></div>
+      <ul>
+        <li>niente condensa se $T_c \ge T$ oppure $T_d \le T_c$</li>
+        <li>soluzione esatta nel passo: prima una fase al tetto (lineare), poi un'esponenziale con $k = F\varepsilon/V$</li>
+        <li>la stanza non scende mai sotto $\rho_{out}$, qualunque sia $\Delta t$</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>$r(\rho_v)$ con $T_c = 5$ °C, $T = 25$ °C, $F = 150$ m³/h</h3>
+      <svg id="ch-coil" viewBox="0 0 520 330" width="100%"></svg>
+      <p class="muted" style="font-size:15px;margin:6px 0 0">Sotto $\rho_{out} = 6.3$ g/m³ non condensa; poi cresce in modo lineare fino al tetto (default 43 L/giorno = 1.8 kg/h).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 10. Compressore -->
+<section class="slide">
+  <div class="chip" style="background:var(--comp)"><i></i>Blocco · Compressore</div>
+  <h2>$T_c$ nasce dal bilancio termico della coil</h2>
+  <div class="cols wide-left">
+    <svg viewBox="0 0 600 400" width="100%" aria-label="Bilancio termico della coil">
+      <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#E07B24"/></marker></defs>
+      <rect x="210" y="140" width="180" height="120" rx="16" fill="#2B8FB3"/>
+      <text x="300" y="193" text-anchor="middle" fill="#fff" font-size="24" font-weight="700">Coil</text>
+      <text x="300" y="222" text-anchor="middle" fill="#fff" font-size="16">capacità termica C</text>
+      <g stroke="#E07B24" stroke-width="4" fill="none">
+        <line x1="30" y1="110" x2="205" y2="165" marker-end="url(#ah2)"/>
+        <line x1="30" y1="200" x2="205" y2="200" marker-end="url(#ah2)"/>
+        <line x1="30" y1="290" x2="205" y2="235" marker-end="url(#ah2)"/>
+        <line x1="390" y1="200" x2="570" y2="200" marker-end="url(#ah2)"/>
+      </g>
+      <g font-size="16" fill="#16262c">
+        <text x="30" y="92" font-weight="700">sensibile Q<tspan baseline-shift="sub" font-size="11">sens</tspan></text>
+        <text x="30" y="188" font-weight="700">latente Q<tspan baseline-shift="sub" font-size="11">lat</tspan></text>
+        <text x="30" y="318" font-weight="700">aria ferma Q<tspan baseline-shift="sub" font-size="11">still</tspan></text>
+        <text x="410" y="188" font-weight="700">compressore</text>
+        <text x="410" y="228" fill="#5b6b72">COP · P</text>
+      </g>
+    </svg>
+    <div>
+      <div class="eq">$$C\,\frac{dT_c}{dt} = Q_{sens} + Q_{lat} + Q_{still} - \mathrm{COP}(T_c,T)\,P$$</div>
+      <div class="eq">$$\begin{aligned} Q_{sens} &= F\,\rho_a c_p\,\varepsilon\,(T - T_c)\\ Q_{lat} &= r\,(L_v + L_f\,[T_c<0])\\ Q_{still} &= h_s\,(T - T_c) \end{aligned}$$<small>$\rho_a c_p = 1.2 \cdot 1005$ J/(m³·K) · $L_v = 2260$ J/g · $L_f = 334$ J/g · $h_s = 3$ W/K · $C = 1000$ J/K · $P = 400$ W</small></div>
+      <ul>
+        <li><b>On/off</b> (default): sempre a $P_{max}$ quando gira; $T_c$ evolve e può scendere sotto 0 °C</li>
+        <li><b>Modulante</b>: $T_c$ al setpoint se il carico lo permette, altrimenti l'equilibrio carico $= \mathrm{COP}\,P_{max}$</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 11. COP -->
+<section class="slide">
+  <div class="chip" style="background:var(--comp)"><i></i>Blocco · Compressore · COP</div>
+  <h2>COP: 0.40 × Carnot, che cala sotto la tabella</h2>
+  <div class="cols wide-left">
+    <div class="card">
+      <h3>COP in funzione di $T_c$, per tre temperature della stanza</h3>
+      <svg id="ch-cop" viewBox="0 0 560 350" width="100%"></svg>
+    </div>
+    <div>
+      <div class="eq">$$\mathrm{COP} = \eta\,\frac{T_e}{T_{cond} - T_e}, \quad \eta = 0.40$$<small>$T_e = T_c - 5$ K (evaporazione) · $T_{cond} = T + 20$ K (condensazione) · in kelvin</small></div>
+      <div class="eq">$$\mathrm{COP}(T_c < T_0) = \mathrm{COP}(T_0)\,\max\!\big(1 - 0.04\,(T_0 - T_c),\; 0.1\big)$$<small>$T_0 = 2$ °C, la temperatura più fredda della tabella</small></div>
+      <ul>
+        <li>tabella 2D (stanza 15/25/35 °C × coil 2…25 °C), interpolazione bilineare; sopra la tabella si usa il valore di bordo</li>
+        <li>il calo del 4 %/K rappresenta la perdita di capacità frigorifera quando il gas aspirato è più rarefatto: senza, a poca portata la coil arrivava a −25/−56 °C</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 12. Brina e defrost -->
+<section class="slide">
+  <div class="chip" style="background:var(--prot)"><i></i>Blocco · Protezioni + defrost</div>
+  <h2>Sotto 0 °C l'acqua diventa brina e serve un defrost</h2>
+  <svg viewBox="0 0 1150 250" width="1150" height="250" aria-label="Ciclo di brina e defrost">
+    <defs><marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8562B5"/></marker></defs>
+    <g fill="#fff">
+      <rect x="10" y="40" width="300" height="130" rx="16" fill="#2B8FB3"/>
+      <text x="160" y="85" text-anchor="middle" font-size="22" font-weight="700">Normale</text>
+      <text x="160" y="115" text-anchor="middle" font-size="16">condensa liquida, drenata</text>
+      <text x="160" y="140" text-anchor="middle" font-size="16">T<tspan baseline-shift="sub" font-size="11">c</tspan> &gt; 0 °C</text>
+      <rect x="420" y="40" width="300" height="130" rx="16" fill="#5E7480"/>
+      <text x="570" y="85" text-anchor="middle" font-size="22" font-weight="700">Brina in accumulo</text>
+      <text x="570" y="115" text-anchor="middle" font-size="16">acqua → ghiaccio m<tspan baseline-shift="sub" font-size="11">ice</tspan></text>
+      <text x="570" y="140" text-anchor="middle" font-size="16">ε<tspan baseline-shift="sub" font-size="11">eff</tspan> = ε / (1 + m<tspan baseline-shift="sub" font-size="11">ice</tspan> / 300 g)</text>
+      <rect x="830" y="40" width="310" height="130" rx="16" fill="#8562B5"/>
+      <text x="985" y="85" text-anchor="middle" font-size="22" font-weight="700">Defrost</text>
+      <text x="985" y="115" text-anchor="middle" font-size="16">compressore OFF, fan ON</text>
+      <text x="985" y="140" text-anchor="middle" font-size="16">coil a 0 °C, fonde a 334 J/g</text>
+    </g>
+    <g stroke="#8562B5" stroke-width="3" fill="none">
+      <line x1="310" y1="105" x2="415" y2="105" marker-end="url(#ap)"/>
+      <line x1="720" y1="105" x2="825" y2="105" marker-end="url(#ap)"/>
+      <path d="M985,170 C985,240 160,240 160,175" marker-end="url(#ap)"/>
+    </g>
+    <g font-size="15" fill="#5b6b72">
+      <text x="362" y="95" text-anchor="middle">T<tspan baseline-shift="sub" font-size="10">c</tspan> &lt; 0 °C</text>
+      <text x="772" y="88" text-anchor="middle">≤ −1 °C</text>
+      <text x="772" y="128" text-anchor="middle">per 300 s</text>
+      <text x="572" y="232" text-anchor="middle">fine: T<tspan baseline-shift="sub" font-size="10">c</tspan> ≥ 3 °C dopo almeno 120 s, oppure 900 s in ogni caso</text>
+    </g>
+  </svg>
+  <div class="cols c3" style="margin-top:14px">
+    <div class="card"><h3>Effetto brina</h3><p style="margin:0">Il ghiaccio isola le alette: con 300 g l'effectiveness si dimezza, e scambio e rimozione calano.</p></div>
+    <div class="card"><h3>Calore latente</h3><p style="margin:0">Sotto 0 °C ogni grammo cede $L_v + L_f$ alla coil; in defrost la fusione assorbe $L_f$ dall'aria.</p></div>
+    <div class="card"><h3>Rievaporazione</h3><p style="margin:0">Il 30 % dell'acqua fusa torna nella stanza invece di essere drenata.</p></div>
+  </div>
+</section>
+
+<!-- 13. Controllo -->
+<section class="slide">
+  <div class="chip" style="background:var(--ctrl)"><i></i>Blocco · Controllore</div>
+  <h2>Anello chiuso: il controllore vede ciò che vedrebbe una scheda reale</h2>
+  <div class="cols c3">
+    <div class="card">
+      <h3>Sensore RH</h3>
+      <div class="eq">$$\tau_s\,\dot{RH}_m = RH - RH_m$$</div>
+      <div class="kv"><b>Rumore</b><span>gaussiano, σ = 0.3 %</span><b>Risoluzione</b><span>0.1 %</span><b>Ritardo</b><span>$\tau_s$ = 30 s</span></div>
+      <p class="muted" style="font-size:15px">I KPI usano invece l'RH vera.</p>
+    </div>
+    <div class="card">
+      <h3>Protezioni compressore</h3>
+      <div class="kv"><b>Min ON</b><span>180 s</span><b>Min OFF</b><span>180 s</span><b>Fan</b><span>obbligatorio con compressore acceso</span></div>
+      <p class="muted" style="font-size:15px">Le richieste che violano i vincoli vengono ignorate e contate.</p>
+    </div>
+    <div class="card">
+      <h3>Velocità del fan</h3>
+      <div class="kv"><b>low</b><span>90 m³/h · 15 W</span><b>medium</b><span>150 m³/h · 25 W</span><b>high</b><span>220 m³/h · 40 W</span></div>
+      <p class="muted" style="font-size:15px">Banda di comfort di default: 45–55 % (target 50 %).</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:20px;background:#fff;border:1px solid var(--line)">
+    <p style="margin:0"><b>Ciclo per passo:</b> misura (RH, T, $T_c$, potenza, stato) → <code>step()</code> dell'algoritmo → protezioni e defrost → fisica del passo → KPI (energia, tempo in banda, g/kWh).</p>
+  </div>
+</section>
+
+<!-- 14. Ipotesi e limiti -->
+<section class="slide dark">
+  <h2 style="color:#fff">Ipotesi e limiti del modello</h2>
+  <div class="cols c3" style="gap:22px">
+    <div class="card" style="background:#14505f;color:#fff"><h3>Temperatura stanza fissa</h3><p style="margin:0">Il calore del condensatore e del compressore non scalda la stanza (in realtà ≈ P + calore latente).</p></div>
+    <div class="card" style="background:#14505f;color:#fff"><h3>Stanza ben miscelata</h3><p style="margin:0">Nessun gradiente, nessun accumulo di umidità in muri, tessuti o arredi.</p></div>
+    <div class="card" style="background:#14505f;color:#fff"><h3>Magnus solo sopra l'acqua</h3><p style="margin:0">Sotto 0 °C la saturazione sul ghiaccio è più bassa: il punto di brina della coil è leggermente approssimato.</p></div>
+    <div class="card" style="background:#14505f;color:#fff"><h3>Coil a parametri concentrati</h3><p style="margin:0">Una sola $T_c$, $\varepsilon$ costante (salvo la brina), nessuna dinamica del refrigerante; potenza elettrica costante nell'on/off.</p></div>
+    <div class="card" style="background:#14505f;color:#fff"><h3>COP non calibrato</h3><p style="margin:0">0.40 × Carnot è una stima di ordine di grandezza: per numeri affidabili serve il datasheet di un'unità reale.</p></div>
+    <div class="card" style="background:#14505f;color:#fff"><h3>Ordine di grandezza</h3><p style="margin:0">A 25 °C e 55–60 % di RH il modello dà ≈ 1.2–1.5 kg/kWh: stesso ordine dei portatili reali (≈ 1.5–2.5 L/kWh dichiarati).</p></div>
+  </div>
+</section>
+
+</div>
+<div class="hint">← → per navigare · stampa per avere tutte le slide</div>
+
+<script>
+(function () {
+  const slides = [...document.querySelectorAll(".slide")];
+  slides.forEach((s, i) => { if (i) { const n = document.createElement("div"); n.className = "pagenum"; n.textContent = (i + 1) + " / " + slides.length; s.appendChild(n); } });
+  let cur = Math.max(0, Math.min(slides.length - 1, (parseInt(location.hash.slice(1), 10) || 1) - 1));
+  function fit() { const k = Math.min(innerWidth / 1280, innerHeight / 720); slides.forEach((s) => (s.style.transform = "scale(" + k + ")")); }
+  function show(i) { cur = Math.max(0, Math.min(slides.length - 1, i)); slides.forEach((s, j) => s.classList.toggle("active", j === cur)); history.replaceState(null, "", "#" + (cur + 1)); }
+  addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); show(cur + 1); }
+    if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); show(cur - 1); }
+    if (e.key === "Home") show(0);
+    if (e.key === "End") show(slides.length - 1);
+  });
+  document.getElementById("deck").addEventListener("click", (e) => show(cur + (e.clientX > innerWidth / 2 ? 1 : -1)));
+  addEventListener("resize", fit);
+  fit(); show(cur);
+
+  // LaTeX via KaTeX (loaded from the CDN).
+  addEventListener("load", () => {
+    if (window.renderMathInElement) renderMathInElement(document.getElementById("deck"), {
+      delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }],
+      throwOnError: false,
+    });
+  });
+
+  // ---- tiny SVG line chart ----
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent, text) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text !== undefined) n.textContent = text; parent.appendChild(n); return n; }
+  function chart(svg, o) {
+    const W = +svg.viewBox.baseVal.width, H = +svg.viewBox.baseVal.height, L = 58, R = 20, T = 16, B = 50;
+    const sx = (x) => L + (x - o.x[0]) / (o.x[1] - o.x[0]) * (W - L - R);
+    const sy = (y) => H - B - (y - o.y[0]) / (o.y[1] - o.y[0]) * (H - T - B);
+    if (o.shade) el("rect", { x: sx(o.shade[0]), y: T, width: sx(o.shade[1]) - sx(o.shade[0]), height: H - T - B, fill: o.shade[2] }, svg);
+    for (const v of o.yt) { el("line", { x1: L, x2: W - R, y1: sy(v), y2: sy(v), stroke: "#d5e2e6" }, svg); el("text", { x: L - 8, y: sy(v) + 5, "text-anchor": "end", "font-size": 14, fill: "#5b6b72" }, svg, v); }
+    for (const v of o.xt) el("text", { x: sx(v), y: H - B + 22, "text-anchor": "middle", "font-size": 14, fill: "#5b6b72" }, svg, v);
+    el("line", { x1: L, x2: W - R, y1: H - B, y2: H - B, stroke: "#9aaab0" }, svg);
+    el("text", { x: (L + W - R) / 2, y: H - 6, "text-anchor": "middle", "font-size": 14, fill: "#5b6b72" }, svg, o.xl);
+    el("text", { x: 14, y: T + (H - T - B) / 2, "text-anchor": "middle", "font-size": 14, fill: "#5b6b72", transform: "rotate(-90 14 " + (T + (H - T - B) / 2) + ")" }, svg, o.yl);
+    for (const s of o.series) {
+      el("polyline", { points: s.pts.map((p) => sx(p[0]) + "," + sy(p[1])).join(" "), fill: "none", stroke: s.color, "stroke-width": s.width || 3.5, "stroke-linejoin": "round", "stroke-dasharray": s.dash || "" }, svg);
+      if (s.label) { const p = s.at || s.pts[s.pts.length - 1]; el("text", { x: sx(p[0]) - 4, y: sy(p[1]) - 8, "text-anchor": "end", "font-size": 13, "font-weight": 700, fill: s.color }, svg, s.label); }
+    }
+    for (const d of o.dots || []) el("circle", { cx: sx(d[0]), cy: sy(d[1]), r: 6, fill: d[2], stroke: "#fff", "stroke-width": 2 }, svg);
+    for (const a of o.notes || []) el("text", { x: sx(a[0]), y: sy(a[1]), "font-size": 13, fill: a[3] || "#5b6b72", "text-anchor": a[4] || "start", "font-weight": a[5] || 400 }, svg, a[2]);
+  }
+
+  // Psychrometrics, as in psychrometrics.py
+  const es = (t) => 6.112 * Math.exp(17.62 * t / (243.12 + t));
+  const rho = (t) => 216.7 * es(t) / (273.15 + t);
+  const range = (a, b, d) => { const r = []; for (let x = a; x <= b + 1e-9; x += d) r.push(x); return r; };
+
+  chart(document.getElementById("ch-es"), { x: [-10, 40], y: [0, 80], xt: [-10, 0, 10, 20, 30, 40], yt: [0, 20, 40, 60, 80], xl: "temperatura T (°C)", yl: "e_s (hPa)",
+    series: [{ pts: range(-10, 40, 0.5).map((t) => [t, es(t)]), color: "#2A9D8F" }],
+    dots: [[0, es(0), "#2A9D8F"], [25, es(25), "#2A9D8F"]],
+    notes: [[1.5, es(0) + 6, "6.1 hPa a 0 °C"], [24, es(25) + 7, "31.6 hPa a 25 °C", "#5b6b72", "end"]] });
+
+  chart(document.getElementById("ch-sat"), { x: [0, 40], y: [0, 55], xt: [0, 10, 20, 30, 40], yt: [0, 10, 20, 30, 40, 50], xl: "temperatura stanza T (°C)", yl: "ρ_vs (g/m³)",
+    series: [{ pts: range(0, 40, 1).map((t) => [t, rho(t)]), color: "#2A9D8F" }],
+    dots: [[25, rho(25), "#2A9D8F"]], notes: [[24, rho(25) + 4, "23.0 g/m³ a 25 °C", "#2A9D8F", "end", 700]] });
+
+  // e–T diagram with RH curves and the worked example
+  const T0 = 25, rv = 11.5, e0 = rv * (273.15 + T0) / 216.7, g = Math.log(e0 / 6.112), Td = 243.12 * g / (17.62 - g);
+  const rhSeries = [100, 80, 60, 40, 20].map((p) => ({ pts: range(0, 35, 0.5).map((t) => [t, es(t) * p / 100]), color: p === 100 ? "#0B3C49" : "#8fb9c2", width: p === 100 ? 3.5 : 2, label: p + " %", at: [p === 100 ? 31 : 35, es(p === 100 ? 31 : 35) * p / 100] }));
+  rhSeries.push({ pts: [[T0, e0], [Td, e0]], color: "#E07B24", dash: "6 5", width: 2.5 });
+  rhSeries.push({ pts: [[Td, e0], [Td, 0]], color: "#E07B24", dash: "3 4", width: 1.5 });
+  chart(document.getElementById("ch-psy"), { x: [0, 35], y: [0, 60], xt: [0, 5, 10, 15, 20, 25, 30, 35], yt: [0, 10, 20, 30, 40, 50, 60], xl: "temperatura T (°C)", yl: "e (hPa)", series: rhSeries,
+    dots: [[T0, e0, "#2A9D8F"], [Td, e0, "#E07B24"]],
+    notes: [[1, 55, "● stanza: 25 °C, RH 50 %", "#2A9D8F", "start", 700], [1, 50.5, "● dew point T_d = 13.9 °C", "#E07B24", "start", 700], [1, 46, "– – raffreddamento a e costante", "#E07B24", "start"]] });
+
+  // Coil removal r(rho_v), Tc = 5, T = 25, F = 150 m3/h, eff 0.85, cap 0.5 g/s
+  const qout = 216.7 * es(5) / (273.15 + 25), Fe = 150 / 3600 * 0.85, cap = 0.5;
+  chart(document.getElementById("ch-coil"), { x: [0, 23], y: [0, 2000], xt: [0, 5, 10, 15, 20], yt: [0, 500, 1000, 1500, 2000], xl: "umidità stanza ρ_v (g/m³)", yl: "rimozione (g/h)",
+    series: [{ pts: range(0, 23, 0.25).map((q) => [q, q > qout ? Math.min(cap, Fe * (q - qout)) * 3600 : 0]), color: "#2B8FB3" }], shade: [0, qout, "#eef1f2"],
+    notes: [[qout / 2, 1700, "nessuna", "#5b6b72", "middle"], [qout / 2, 1580, "condensa", "#5b6b72", "middle"], [21.5, 1880, "tetto", "#2B8FB3", "end", 700]] });
+
+  // COP: 0.40 x Carnot table, falloff 4 %/K below 2 C, floor 10 %
+  const table = { 15: [2.8, 3.1, 3.7, 4.5, 5.8, 7.8], 25: [2.3, 2.4, 2.8, 3.2, 3.8, 4.7], 35: [1.9, 2.0, 2.2, 2.5, 2.9, 3.4] }, axis = [2, 5, 10, 15, 20, 25];
+  function cop(row, t) {
+    if (t < 2) return row[0] * Math.max(1 - 0.04 * (2 - t), 0.1);
+    for (let j = 1; j < axis.length; j++) if (t <= axis[j]) return row[j - 1] + (row[j] - row[j - 1]) * (t - axis[j - 1]) / (axis[j] - axis[j - 1]);
+    return row[row.length - 1];
+  }
+  const colors = { 15: "#1d6f8f", 25: "#E07B24", 35: "#8a3d12" };
+  chart(document.getElementById("ch-cop"), { x: [-15, 25], y: [0, 8], xt: [-15, -10, -5, 0, 5, 10, 15, 20, 25], yt: [0, 2, 4, 6, 8], xl: "temperatura coil T_c (°C)", yl: "COP",
+    series: Object.keys(table).map((r) => ({ pts: range(-15, 25, 0.5).map((t) => [t, cop(table[r], t)]), color: colors[r], label: "stanza " + r + " °C" })),
+    shade: [-15, 2, "#fbeee2"], notes: [[-6.5, 7.2, "fuori tabella:", "#b5641e", "middle"], [-6.5, 6.6, "−4 %/K", "#b5641e", "middle"]] });
+})();
+</script>
+</body>
+</html>
